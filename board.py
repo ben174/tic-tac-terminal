@@ -18,8 +18,8 @@ class Player(Enum):
 
     '''
 
-    X = 'X'
-    O = 'O'
+    PLAYER_X = 'X'
+    PLAYER_O = 'O'
 
 
 
@@ -33,11 +33,11 @@ class Board:
 
     def __init__(self):
         self.board = [[None]*3 for i in range(3)]
-        self.current_player = Player.X
+        self.current_player = Player.PLAYER_X
         self.state = BoardState.PLAYING
 
-    def check_win(self):
-        """ Check board for a win condition.
+    def check_state(self) -> BoardState:
+        """ Check board for a win condition or errors.
 
         Checks the board for win conditions in rows, columns and diagonal.
         Also checks the board for invalid states (multiple wins), or a
@@ -68,16 +68,29 @@ class Board:
         #TODO: if game is finished set self.state = 'FINISHED'
         #TODO: check cats game ?
         # if len(set(row)) == 2 for all rows and cols and diagonals
+        return BoardState.PLAYING
 
     def select_cell(self, row, column):
+        """ Plays a square (of `self.current_player`) in the specified `row`/`column`.
+
+        Attempts to play a square for the specified `row`/`column`. If the
+        square is playable, assigns the value of `self.current_player` to that
+        square.
+        Then, `self.check_win()` is called to set the new `BoardState` value
+        and toggle the player (if the game is still in progress).
+
+        :returns:
+            A BoardState with the current state of the board.
+
+        """
         current_val = self.board[row][column]
         if current_val is not None:
             raise InvalidMoveException('Attempted to select a non-empty cell')
         self.board[row][column] = self.current_player
-        if self.check_win() == BoardState.PLAYING:
-
+        self.state = self.check_state()
+        if self.state == BoardState.PLAYING:
             # only toggle current_player if the self.state is still PLAYING
-            self.current_player = Player.O if self.current_player == Player.X else Player.X
+            self.current_player = Player.PLAYER_O if self.current_player == Player.PLAYER_X else Player.PLAYER_X
 
     def __str__(self):
         ret = ''
@@ -92,7 +105,14 @@ class Board:
 
 
 class MultipleWinException(Exception):
-    pass
+    """ An exception which is thrown when the board has invalid state containing
+    more than one win.
+
+    """
+
 
 class InvalidMoveException(Exception):
-    pass
+    """ An exception which is thrown when the an invalid move attempt is made
+    (selecting an already-occupied square.
+
+    """
