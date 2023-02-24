@@ -1,5 +1,6 @@
 import logging
 from enum import Enum
+from collections import Counter
 
 
 logging.basicConfig(filename='game.log', level=logging.DEBUG, force=True)
@@ -51,35 +52,39 @@ class Board:
 
         """
         win_count = 0
-        spans = []
+        spans = {}
 
         # check each row and column
         for i in range(3):
             row = self.board[i]
+            spans[f'row {i}'] = row
             col = self.board[0][i], self.board[1][i], self.board[2][i]
-            logging.debug('Checking row ({}): {}'.format(i, row))
-            logging.debug('Checking col ({}): {}'.format(i, col))
-            spans.append(row)
-            spans.append(col)
+            spans[f'col {i}'] = col
 
         # check diagonal front and back
         diag_f = self.board[0][0], self.board[1][1], self.board[2][2]
         diag_b = self.board[0][2], self.board[1][1], self.board[2][0]
-        logging.debug('Checking diagonal (\\): {}'.format(diag_f))
-        logging.debug('Checking diagonal (/): {}'.format(diag_b))
-        spans.append(diag_f)
-        spans.append(diag_b)
+        spans['diag f'] = diag_f
+        spans['diag b'] = diag_b
+        logging.debug('Checking diagonal (\\): %s', diag_f)
+        logging.debug('Checking diagonal (/): %s', diag_b)
 
         # do the check
         clear_row_found = False
-        for span in spans:
+        for span_name, span in spans.items():
+            span_count = Counter(span)
+            logging.debug('Checking span: %s - %s', span_name, span)
 
             # check if at least one span isn't blocked
-            if len(set(span)) == 1 or None in set(span):
+            if (span_count[Player.PLAYER_O] == 0 or
+               span_count[Player.PLAYER_X] == 0):
+                logging.debug('Found a span which is clear for win: %s', span)
                 clear_row_found = True
 
-            if len(set(span)) == 1 and None not in set(span):
-                print('WINNER WINNER chicken dinner.')
+            if (span_count[Player.PLAYER_O] == 3 or
+               span_count[Player.PLAYER_X] == 3):
+                logging.info('Winner, winner, chicken dinner.')
+                logging.info(span_count)
                 win_count += 1
 
         if not clear_row_found:
@@ -90,7 +95,7 @@ class Board:
         if win_count == 1:
             logging.info('Found one win')
             return BoardState.FINISHED
-        elif win_count > 1:
+        if win_count > 1:
             logging.error('Invalid board state (multiple wins)')
             raise MultipleWinError()
 

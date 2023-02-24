@@ -1,3 +1,5 @@
+"""Module tests for Board"""
+
 import pytest
 
 from board import Board, BoardState, Player
@@ -79,7 +81,8 @@ def test_col_win():
     """
     for i in range(3):
         board = Board()
-        board.board[0][i], board.board[1][i], board.board[2][i] = [Player.PLAYER_O] * 3
+        board.board[0][i], board.board[1][i], board.board[2][i] = (
+            [Player.PLAYER_O] * 3)
         assert board.check_state() == BoardState.FINISHED
 
 
@@ -95,7 +98,8 @@ def test_diagonal_win():
 
     # Diagonal: /
     board = Board()
-    board.board[2][0], board.board[1][1], board.board[0][2] = [Player.PLAYER_O] * 3
+    board.board[2][0], board.board[1][1], board.board[0][2] = (
+        [Player.PLAYER_O] * 3)
     assert board.check_state() == BoardState.FINISHED
 
 
@@ -110,8 +114,8 @@ def test_cats_game():
     # X O -
     # X O X
     board.board[0] = Player.PLAYER_O, Player.PLAYER_X, Player.PLAYER_O
-    board.board[0] = Player.PLAYER_X, Player.PLAYER_O, None
-    board.board[1] = Player.PLAYER_X, Player.PLAYER_O, Player.PLAYER_X
+    board.board[1] = Player.PLAYER_X, Player.PLAYER_O, None
+    board.board[2] = Player.PLAYER_X, Player.PLAYER_O, Player.PLAYER_X
     assert board.check_state() == BoardState.CATS_GAME
 
 
