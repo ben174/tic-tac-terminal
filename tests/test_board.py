@@ -20,20 +20,66 @@ def test_win():
     until the game is finished.
     """
     board = Board()
+
     # X: X - -
+    #    - - -
+    #    - - -
     board.select_cell(0, 0)
 
-    # O: O - -
+    # O: X - -
+    #    O - -
+    #    - - -
     board.select_cell(1, 0)
 
     # X: X X -
+    #    O - -
+    #    - - -
     board.select_cell(0, 1)
 
-    # O: O O -
+    # O: X X -
+    #    O O -
+    #    - - -
     board.select_cell(1, 1)
     assert board.state == BoardState.PLAYING
 
     # X: X X X -- Finish Him!
+    #    O O -
+    #    - - -
+    board.select_cell(0, 2)
+    assert board.state == BoardState.FINISHED
+
+
+def test_ai():
+    """ Plays a standard game, against AI
+    TODO: this should be an entire module
+    """
+    board = Board(enable_ai=True)
+    board.select_cell(0, 0)
+
+    # X: X - -
+    #    - - -
+    #    - - -
+    board.select_cell(0, 0)
+
+    # O: X - -
+    #    O - -
+    #    - - -
+    board.select_cell(1, 0)
+
+    # X: X X -
+    #    O - -
+    #    - - -
+    board.select_cell(0, 1)
+
+    # O: X X -
+    #    O O -
+    #    - - -
+    board.select_cell(1, 1)
+    assert board.state == BoardState.PLAYING
+
+    # X: X X X -- Finish Him!
+    #    O O -
+    #    - - -
     board.select_cell(0, 2)
     assert board.state == BoardState.FINISHED
 

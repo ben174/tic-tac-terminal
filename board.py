@@ -1,9 +1,9 @@
-import logging
+"""Module containing game logic"""
 from enum import Enum
 from collections import Counter
 
-
-logging.basicConfig(filename='game.log', level=logging.DEBUG, force=True)
+import ai
+from loggers import board_logger
 
 
 class BoardState(Enum):
@@ -25,20 +25,31 @@ class Player(Enum):
     PLAYER_X = 'X'
     PLAYER_O = 'O'
 
+    @classmethod
+    def get_foe(cls, player):
+        """ Returns the opposing `Player` for the specified `player`
+        """
+        foe = 'X' if player.value == 'O' else 'O'
+        return cls(foe)
+
 
 class Board:
-    '''
-    A class to hold the stateful Tic-Tac-Toe board, including the
+    """ A class to hold the stateful Tic-Tac-Toe board, including the
     current board layout, the state of the board, and the current
     move.
+    """
 
-    '''
-
-    def __init__(self):
-        logging.info('Game start')
-        self.board = [[None]*3 for i in range(3)]
+    def __init__(self, board=None, enable_ai=False):
+        """ Creates a new instance of the Board class, optionally
+        accepting a current board state. """
+        board_logger.info('Game start')
+        self.board = board if board is not None else [
+            [None]*3 for i in range(3)
+        ]
         self.current_player = Player.PLAYER_X
+        self.winning_span = []
         self.state = BoardState.PLAYING
+        self.enable_ai = enable_ai
 
     def check_state(self) -> BoardState:
         """ Check board for a win condition or errors.
@@ -49,7 +60,6 @@ class Board:
 
         :returns:
             A BoardState with the current state of the board.
-
         """
         win_count = 0
         spans = {}
@@ -66,37 +76,40 @@ class Board:
         diag_b = self.board[0][2], self.board[1][1], self.board[2][0]
         spans['diag f'] = diag_f
         spans['diag b'] = diag_b
-        logging.debug('Checking diagonal (\\): %s', diag_f)
-        logging.debug('Checking diagonal (/): %s', diag_b)
+        board_logger.debug('Checking diagonal (\\): %s', diag_f)
+        board_logger.debug('Checking diagonal (/): %s', diag_b)
 
         # do the check
         clear_row_found = False
         for span_name, span in spans.items():
             span_count = Counter(span)
-            logging.debug('Checking span: %s - %s', span_name, span)
+            board_logger.debug('Checking span: %s - %s', span_name, span)
 
             # check if at least one span isn't blocked
             if (span_count[Player.PLAYER_O] == 0 or
                span_count[Player.PLAYER_X] == 0):
-                logging.debug('Found a span which is clear for win: %s', span)
+                board_logger.debug(
+                   'Found a span which is clear for win: %s', span
+                )
                 clear_row_found = True
 
             if (span_count[Player.PLAYER_O] == 3 or
                span_count[Player.PLAYER_X] == 3):
-                logging.info('Winner, winner, chicken dinner.')
-                logging.info(span_count)
+                board_logger.info('Winner, winner, chicken dinner.')
+                board_logger.info(span_count)
+                self.winning_span = span_name
                 win_count += 1
 
         if not clear_row_found:
-            logging.info('Cat\'s game')
+            board_logger.info('Cat\'s game')
             return BoardState.CATS_GAME
 
         # if win, ensure exactly one win
         if win_count == 1:
-            logging.info('Found one win')
+            board_logger.info('Found one win')
             return BoardState.FINISHED
         if win_count > 1:
-            logging.error('Invalid board state (multiple wins)')
+            board_logger.error('Invalid board state (multiple wins)')
             raise MultipleWinError()
 
         return BoardState.PLAYING
@@ -121,10 +134,37 @@ class Board:
         self.state = self.check_state()
         if self.state == BoardState.PLAYING:
             # only toggle current_player if the self.state is still PLAYING
-            self.current_player = (Player.PLAYER_O
-                                   if self.current_player == Player.PLAYER_X
-                                   else Player.PLAYER_X)
-            logging.debug('Setting player: %s', self.current_player.value)
+            self.current_player = Player.get_foe(self.current_player)
+            if self.current_player == Player.PLAYER_O and self.enable_ai:
+                grid = self.board_to_grid()
+                board_logger.info(grid)
+                move = ai.get_best_move(grid)
+                board_logger.info('AI selected best move %s', move)
+                self.select_cell(move[0], move[1])
+            board_logger.debug('Setting player: %s', self.current_player.value)
+
+    def board_to_grid(self):
+        """ Returns a copy of the board as a primitive list of lists
+        with string values for the moves, or None for empty squares.
+        """
+        ret = []
+        for row_num in range(3):
+            row_vals = []
+            for cell in self.board[row_num]:
+                val = None if cell is None else cell.value
+                row_vals.append(val)
+            ret.append(row_vals)
+        return ret
+
+    def get_available_squares(self) -> [(int, int)]:
+        """ Returns a list of coordinates for empty squares on the board.
+        """
+        ret = []
+        for row_num in range(3):
+            for col_num in range(3):
+                if self.board[row_num][col_num] is None:
+                    ret.append((row_num, col_num))
+        return ret
 
     def __repr__(self):
         ret = ''
