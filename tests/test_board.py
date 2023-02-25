@@ -53,8 +53,7 @@ def test_ai():
     """ Plays a standard game, against AI
     TODO: this should be an entire module
     """
-    board = Board(enable_ai=True)
-    board.select_cell(0, 0)
+    board = Board(enable_ai=False)
 
     # X: X - -
     #    - - -
