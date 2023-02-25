@@ -1,8 +1,6 @@
 import ai
-import logging
+from loggers import ai_logger
 
-
-logging.basicConfig(filename='game.log', level=logging.DEBUG, force=True)
 
 HORIZONTAL_WIN_O = [
     ['O', 'O', 'O'],
@@ -46,23 +44,38 @@ BEST_MOVE_O = [
     ['O', None, None],
 ]
 
+''' causes loop
+BEST_MOVE_O = [
+    ['X', None, None],
+    [None, None, None],
+    [None, None, None],
+]
+'''
 
 
 def test_ai_check_horizontal():
+    """Verifies `check_winner` function for horizontal wins."""
     assert ai.check_winner(HORIZONTAL_WIN_O) == 'O'
 
+
 def test_ai_check_vertical():
+    """Verifies `check_winner` function for vertical wins."""
     assert ai.check_winner(VERTICAL_WIN_X) == 'X'
 
+
 def test_ai_check_diag():
+    """Verifies `check_winner` function for diagonal wins."""
     assert ai.check_winner(DIAG_WIN_O) == 'O'
     assert ai.check_winner(DIAG_WIN_X) == 'X'
 
+
 def test_ai_cats_game():
+    """Verifies `check_winner` function for cat's games (tie game)."""
     assert ai.check_winner(CATS_GAME) == 'cats'
 
 
 def test_ai_best_move():
+    """Verifies `get_best_move` function."""
     move = ai.get_best_move(BEST_MOVE_O)
-    logging.warning('best move done')
-    logging.warning(move)
+    ai_logger.warning('best move done')
+    ai_logger.warning(move)
