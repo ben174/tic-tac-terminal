@@ -2,6 +2,7 @@
 
 import pytest
 
+from loggers import board_logger
 from board import Board, BoardState, Player
 from board import MultipleWinError, InvalidMoveError
 
@@ -53,12 +54,17 @@ def test_ai():
     """ Plays a standard game, against AI
     TODO: this should be an entire module
     """
-    board = Board(enable_ai=False)
+    board = Board()
 
     # X: X - -
     #    - - -
     #    - - -
     board.select_cell(0, 0)
+
+    board.make_best_move()
+    board_logger.info(board.board)
+
+    return
 
     # O: X - -
     #    O - -

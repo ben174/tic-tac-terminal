@@ -15,7 +15,6 @@ NEGATIVE_INFINITY = float('-inf')
 def check_winner(grid, depth=0):
     ai_logger.debug('%sCheck Winner, Grid:', ' '*depth)
     ai_logger.debug(grid)
-
     winner = None
 
     for row_num in range(3):
@@ -47,7 +46,8 @@ def check_winner(grid, depth=0):
 
 
 def mini_max(grid, depth, maximize):
-    winner = check_winner(grid)
+    """Implemention of mini_max algorithm"""
+    winner = check_winner(grid, depth)
 
     if winner is not None:
         ai_logger.info('%sMINIMAX (winner) returning: %s, depth: %s, maximize: %s', ' '*depth, SCORES[winner], depth, maximize)
@@ -69,6 +69,7 @@ def mini_max(grid, depth, maximize):
 
 
 def get_best_move(grid):
+    """AI magic: determine the best move using minmax algorithm (recursion)."""
     best_score = NEGATIVE_INFINITY
     move = None
 
@@ -82,6 +83,19 @@ def get_best_move(grid):
                     best_score = score
                     move = (row_num, col_num)
     return move
+
+
+def board_to_grid(board):
+    """ Returns a copy of the board as a primitive list of lists
+    with string values for the moves, or None for empty squares."""
+    ret = []
+    for row_num in range(3):
+        row_vals = []
+        for cell in board[row_num]:
+            val = None if cell is None else cell.value
+            row_vals.append(val)
+        ret.append(row_vals)
+    return ret
 
 '''
 function minimax(board, depth, isMaximizing) {
