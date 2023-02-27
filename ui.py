@@ -17,13 +17,7 @@ class TicTacTerminalApp(App):
 
     def __init__(self):
         super().__init__()
-        game_layout = [
-            [Player.PLAYER_X, Player.PLAYER_O, None],
-            [Player.PLAYER_X, Player.PLAYER_O, None],
-            [Player.PLAYER_X, Player.PLAYER_X, None],
-        ]
-        game_layout = None
-        self.board = Board(game_layout, ai=True)
+        self.board = Board()
 
     def on_mount(self) -> None:
         """Occurs after initial layout is performed."""
@@ -74,6 +68,7 @@ class TicTacTerminalApp(App):
         row, col = (int(i) for i in event.button.id.split('-')[1:])
         try:
             self.board.select_cell(row, col)
+            self.board.make_best_move()
             self.draw_board()
         except InvalidMoveError:
             log('Invalid move, dummy')
@@ -96,13 +91,13 @@ class TicTacTerminalApp(App):
                     button.remove_class('player-X')
                     button.add_class('player-O')
 
-        if self.board.state == BoardState.FINISHED:
+        if self.board.get_state() == BoardState.FINISHED:
             log('Winner')
-            log(self.board.winning_span)
+            # log(self.board.winning_span)
 
-            for cell in self.board.winning_span:
-                button = self.query_one(f'#cell-{cell[0]}-{cell[1]}')
-                button.addClass('win')
+            # for cell in self.board.winning_span:
+            #     button = self.query_one(f'#cell-{cell[0]}-{cell[1]}')
+            #     button.addClass('win')
 
             self.board = Board()
             self.draw_board()
