@@ -61,8 +61,9 @@ def test_ai():
     #    - - -
     board.select_cell(0, 0)
 
-    board.make_best_move()
-    board_logger.info(board.board)
+    while True:
+        board.make_best_move()
+        board_logger.info(str(board))
 
     return
 

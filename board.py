@@ -190,36 +190,45 @@ class Board:
         return ret
 
 
-    def make_best_move_simple(self):
-        pass
+    def make_best_move(self):
         board_logger.debug('Make best move')
         winner = self.get_winner()
         if winner:
             board_logger.warning('Attempt to make best move in non playing state')
             return
 
-
         player = self.get_current_player()
-        opponent = self.Player.get_foe(player)
-
-        spans = {}
-        spans = {}
+        opponent = Player.get_foe(player)
 
         # win or block
         for row_num in range(3):
             row = self.board[row_num]
             counter = Counter(row)
+            board_logger.debug('Row counter %s: %s', row_num, counter)
             # if there is one empty spot on this row, grab it!
             if ((counter[player] == 2 and counter[opponent] == 0) or
-               (counter[opponent] == 2 and counter[player] == 0):
+               (counter[opponent] == 2 and counter[player] == 0)):
+                board_logger.debug('Found a span with one empty spot. Grabbing it.')
                 for col_num in range(3):
-                    board_logger.debug('Found a span with one empty spot. Grabbing it.')
+                    cell_val = self.board[row_num][col_num]
+                    if cell_val is None:
+                        self.board[row_num][col_num] = player
+
+        for col_num in range(3):
+            col = self.board[0][col_num], self.board[1][col_num], self.board[2][col_num]
+            counter = Counter(col)
+            board_logger.debug('Column counter %s: %s', col_num, counter)
+            # if there is one empty spot on this column, grab it!
+            if ((counter[player] == 2 and counter[opponent] == 0) or
+               (counter[opponent] == 2 and counter[player] == 0)):
+                board_logger.debug('Found a span with one empty spot. Grabbing it.')
+                for row_num in range(3):
                     cell_val = self.board[row_num][col_num]
                     if cell_val is None:
                         self.board[row_num][col_num] = player
 
         # if a corner is available, take it
-        corner_cells = ((0, 0), (0, 2), (2, 0), (0, 2)):
+        corner_cells = ((0, 0), (0, 2), (2, 0), (0, 2))
         for cell in corner_cells:
             if self.board[cell[0]][cell[1]] is None:
                 board_logger.debug('Taking a corner cell.')
@@ -228,200 +237,19 @@ class Board:
 
         # if the center is available, take it
         if self.board[1][1] is None:
-			board_logger.debug('Taking the center cell.')
-			self.board[1][1] = player
-			return
+            board_logger.debug('Taking the center cell.')
+            self.board[1][1] = player
+            return
 
         # if an edge is available, take it
-        edge_cells = ((1, 0), (0, 1), (2, 1), (1, 2)):
+        edge_cells = ((1, 0), (0, 1), (2, 1), (1, 2))
         for cell in edge_cells:
             if self.board[cell[0]][cell[1]] is None:
                 board_logger.debug('Taking an edge cell.')
                 self.board[cell[0]][cell[1]] = player
                 return
 
-
-
-
-
-    def make_best_move(self):
-        ''' Makes best move for current player.'''
-        board_logger.debug('Make best move')
-        winner = self.get_winner()
-        if winner:
-            board_logger.warning('Attempt to make best move in non playing state')
-            return
-
-
-        player = self.get_current_player()
-
-
-
-
-        score_cells = defaultdict(list)
-        cell_scores = {}
-
-        scores_grid = [[None, None, None],
-                       [None, None, None],
-                       [None, None, None]]
-
-        for cell in self.get_available_squares():
-            # first try to win
-            self.board[cell[0]][cell[1]] = player
-            winner = self.get_winner()
-            if winner == player:
-                board_logger.debug('Found a winning move, making it: %s', cell)
-                return
-
-            # see if foe has a win
-            foe = Player.PLAYER_O if player == Player.PLAYER_X else Player.PLAYER_O
-            self.board[cell[0]][cell[1]] = foe
-            winner = self.get_winner()
-            if winner == foe:
-                board_logger.debug('Must block a winning move by opponent: %s', cell)
-                self.board[cell[0]][cell[1]] = player
-                return
-
-            board_logger.debug('Minimax score incoming...')
-            minimax_score = self.minimax(player, 0, cell)
-            board_logger.debug('Minimax score: %s, %s', minimax_score, cell)
-            score_cells[minimax_score].append(cell)
-            scores_grid[cell[0]][cell[1]] = minimax_score
-            cell_scores[cell] = minimax_score
-            board_logger.debug('Restoring board...')
-            self.board[cell[0]][cell[1]] = None
-
-            board_logger.debug('Make best move done.')
-            board_logger.debug('Cell Scores:')
-            board_logger.debug(cell_scores)
-            board_logger.debug('Score Cells:')
-            for score, cells in score_cells.items():
-                board_logger.debug('  %s - %s', score, cells)
-            board_logger.debug('Scores Grid:')
-            board_logger.debug(scores_grid)
-
-
-    def minimax(self, maximizing_player, score, cell):
-        winner = self.get_winner()
-        ret = score
-        if winner is not None:
-            board_logger.debug('Minimax found a winner: %s', winner)
-            if winner == maximizing_player:
-                return score + 1
-            else:
-                return score - 1
-
-        score_cells = defaultdict(list)
-        cell_scores = {}
-
-        board_logger.debug('No winner found yet, minimaxing child cells')
-        self.board[cell[0]][cell[1]] = maximizing_player
-        available_squares = self.get_available_squares()
-        if len(available_squares) == 1:
-            board_logger.debug('MUST return only available square: %s', available_squares[0])
-            return 0
-        for child_cell in self.get_available_squares():
-            self.board[child_cell[0]][child_cell[1]] = maximizing_player
-            minimax_score = self.minimax(maximizing_player, score, child_cell)
-            self.board[child_cell[0]][child_cell[1]] = None
-            score += minimax_score
-            cell_scores[child_cell] = minimax_score
-            score_cells[score].append(child_cell)
-        self.board[cell[0]][cell[1]] = None
-
-        return score
-
-        max_score = max(score_cells.keys())
-        board_logger.debug('Minimax done for cell: %s', cell)
-        board_logger.debug('Max Score: %s', max_score)
-        board_logger.debug('Cells with max score: %s', score_cells[max_score])
-        ret = random.choice(score_cells[max_score])
-        board_logger.debug('Returning random best choice: %s', ret)
-        return ret
-
-
-    '''
-    def minimax(self, state, depth, player):
-        """
-        AI function that choice the best move
-        :param state: current state of the board
-        :param depth: node index in the tree (0 <= depth <= 9),
-        but never nine in this case (see iaturn() function)
-        :param player: an human or a computer
-        :return: a list with [the best row, best col, best score]
-        """
-        if player == COMP:
-            best = [-1, -1, -infinity]
-        else:
-            best = [-1, -1, +infinity]
-
-        winner = self.get_winner()
-        if depth == 0 or winner is not None:
-            if winner == COMP:
-                score = 1
-            elif winner == HUMAN:
-                score = -1
-            else:
-                score = 0
-            return [-1, -1, score]
-
-        for cell in self.empty_cells(state):
-            x, y = cell[0], cell[1]
-            state[x][y] = player
-            score = self.minimax(state, depth - 1, -player)
-            state[x][y] = 0
-            score[0], score[1] = x, y
-
-            if player == COMP:
-                if score[2] > best[2]:
-                    best = score  # max value
-            else:
-                if score[2] < best[2]:
-                    best = score  # min value
-
-        return best
-
-    def make_best_move(self):
-        """ Makes the best move using recurison (MiniMax algorithm).
-        """
-        board_logger.debug('Make best move')
-        best_score = float('-inf')
-        best_move = None
-        for move in self.get_available_squares():
-            row, col = move
-            self.select_cell(row, col)
-            score = self.minimax(False, Player.PLAYER_O)
-            self.undo()
-            if score > best_score:
-                best_score = score
-                best_move = move
-        board_logger.debug('Selecting best move: %s', best_move)
-        self.board.select_cell(best_move)
-
-    def minimax(self, max_turn, maximizer):
-        """ Implementation of minimax algorithm to determine best move. """
-        state = self.check_state()
-        if state is BoardState.CATS_GAME:
-            return 0
-        if state is BoardState.FINISHED:
-            winner = self.get_winner()
-            return 1 if winner == maximizer else -1
-
-        scores = []
-        available_squares = self.get_available_squares()
-        for move in available_squares:
-            row, col = move
-            board_logger.debug('Minimax selecting available square: %s', move)
-            board_logger.debug('Board:')
-            board_logger.debug(str(self))
-            board_logger.debug('Available Squares:')
-            board_logger.debug(available_squares)
-            self.select_cell(row, col)
-            scores.append(self.minimax(not max_turn, maximizer))
-            self.undo()
-        return max(scores) if max_turn else min(scores)
-
-    '''
+        raise InvalidMoveError('No moves available')
 
     def __repr__(self):
         ret = 'Board State:\n'
