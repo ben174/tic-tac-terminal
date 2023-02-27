@@ -48,7 +48,6 @@ class Board:
             [None]*3 for i in range(3)
         ]
         self.winning_span = []
-        self.state = BoardState.PLAYING
 
     def get_winner(self):
         """ Find winner on board."""
@@ -78,7 +77,7 @@ class Board:
                 board_logger.info('Winner: %s', winner)
                 return winner
 
-    def check_state(self) -> BoardState:
+    def get_state(self) -> BoardState:
         """ Check board for a win condition or errors.
 
         Checks the board for win conditions in rows, columns and diagonal.
@@ -143,7 +142,7 @@ class Board:
         return BoardState.PLAYING
 
     def select_cell(self, row, column):
-        """ Plays a square (of `self.get_current_player`) in the specified
+        """ Plays a square (of `self.get_current_player()`) in the specified
         `row`/`column`.
 
         Attempts to play a square for the specified `row`/`column`. If the
@@ -159,8 +158,8 @@ class Board:
             raise InvalidMoveError(error_text)
         self.board[row][column] = self.get_current_player()
 
-
     def get_current_player(self):
+        """ Returns the Player whose turn it currently is. """
         board_logger.debug('Get current player')
         ret = Player.PLAYER_X
         square_counter = Counter()
@@ -175,7 +174,6 @@ class Board:
         board_logger.debug(str(self))
         return ret
 
-
     def get_available_squares(self) -> [(int, int)]:
         """ Returns a list of coordinates for empty squares on the board.
         """
@@ -189,11 +187,10 @@ class Board:
         board_logger.debug(ret)
         return ret
 
-
     def make_best_move(self):
         board_logger.debug('Make best move')
-        winner = self.get_winner()
-        if winner:
+        state = self.get_state()
+        if state is not BoardState.PLAYING:
             board_logger.warning('Attempt to make best move in non playing state')
             return
 
@@ -228,7 +225,7 @@ class Board:
                         self.board[row_num][col_num] = player
 
         # if a corner is available, take it
-        corner_cells = ((0, 0), (0, 2), (2, 0), (0, 2))
+        corner_cells = ((0, 0), (0, 2), (2, 0), (2, 2))
         for cell in corner_cells:
             if self.board[cell[0]][cell[1]] is None:
                 board_logger.debug('Taking a corner cell.')
