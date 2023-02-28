@@ -10,13 +10,6 @@ handlers:
     level: DEBUG
     formatter: simple
     stream: ext://sys.stdout
-  ai_file:
-    class: logging.FileHandler
-    level: DEBUG
-    formatter: precise
-    filename: ai.log
-    encoding: utf8
-    mode: w
   board_file:
     class: logging.FileHandler
     level: DEBUG
@@ -24,11 +17,33 @@ handlers:
     filename: board.log
     encoding: utf8
     mode: w
+  game_file:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: precise
+    filename: game.log
+    encoding: utf8
+    mode: w
+  ai_file:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: precise
+    filename: ai.log
+    encoding: utf8
+    mode: w
 loggers:
+  board:
+    level: DEBUG
+    handlers: [board_file]
+    propagate: no
+  game:
+    level: DEBUG
+    handlers: [game_file]
+    propagate: no
   ai:
     level: DEBUG
-    handlers: [console, ai_file]
+    handlers: [ai_file]
     propagate: no
 root:
   level: DEBUG
-  handlers: [console, board_file]
+  handlers: [console]
