@@ -1,32 +1,47 @@
-Screen {
-    overflow: auto;
+BoardScreen {
+  layout: vertical;
+  overflow: auto;
 }
 
-#calculator {    
-    layout: grid;
-    grid-size: 3;
-    grid-gutter: 1 2;
-    grid-columns: 1fr;
-    grid-rows: 2fr 1fr 1fr 1fr 1fr 1fr;
-    margin: 1 2;
-    min-height: 25;
-    min-width: 26;
-    height: 100%;
+#game-container {
+  layout: grid;
+  grid-size: 3;
+}
+
+#cells-container {
+  layout: grid;
+  grid-size: 3;
+  column-span: 2;
+  margin: 1 2;
+  min-height: 5;
+  min-width: 26;
+  height: 100%;
+}
+
+#status-container {
+  layout: vertical;
+  width: 100%;
+  margin: 1 2;
+  height: 100%;
+}
+
+.box {
+ height: 1fr;
+ border: solid green;
 }
 
 Button {
-    width: 100%;
-    height: 100%;
+  width: 100%;
+  height: 100%;
+  margin: 1;
 }
 
 #header-label {
-    width: 100%;
-    column-span: 3; 
-    content-align: center middle;
-    padding: 0 1;
-    height: 100%;
-    background: $primary-lighten-2;
-    color: $text;
+  width: 100%;
+  content-align: center middle;
+  padding: 0 1;
+  background: $primary-lighten-2;
+  color: $text;
 }
 
 Header {
@@ -51,8 +66,8 @@ Header {
 }
 
 .player-X {
-    background: $primary-lighten-2;
+  background: $primary-lighten-2;
 }
 .player-O {
-    background: $primary-lighten-3;
+  background: $primary-lighten-3;
 }

@@ -9,6 +9,8 @@
 
 [![Tic-Tac-Terminal](https://github.com/ben174/tic-tac-terminal/actions/workflows/python-package.yml/badge.svg)](https://github.com/ben174/tic-tac-terminal/actions/workflows/python-package.yml)
 
+![Gameplay Demo](demo.gif)
+
 # Tic-Tac-Terminal
 Tic-Tac-Toe in the terminal. A game by Ben Friedland (www.bugben.com)
 
@@ -19,13 +21,13 @@ Tic-Tac-Toe in the terminal. A game by Ben Friedland (www.bugben.com)
 Consists of three main modules:
 
 - **`board.py`** - The game logic
-- **`ai.py`** - AI for playing against the computer
+- **`game.py`** - Game orchestration module to hold stats and AI logic
 - **`ui.py`** - A fancy curses-style UI to play the game in your console
-- **`tests/board.py`** - Thorough testing of the entire game module
+- **`tests/board.py`** - Thorough testing of the board module
 
 ### Graceful exception handling:
 
-Dedicated `Exception` classes to alert to invalid board conditions or moves.
+Dedicated`Exception` classes to alert to invalid board conditions or moves.
 
 ### Rigorous testing and CI pipeline:
 
@@ -38,7 +40,7 @@ Full coverage of the board module to ensure nothing breaks. GitHub workflow to t
 
 ```bash
 pip install -r requirements.txt
-python ui.py
+./run.sh
 ```
 
 

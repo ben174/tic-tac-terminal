@@ -1,9 +1,10 @@
 """Module containing game logic"""
+import random
 from enum import Enum
-from collections import Counter
+from collections import Counter, defaultdict
+from math import inf as infinity
 
-import ai
-from loggers import board_logger
+from loggers import board_logger, ai_logger
 
 
 class BoardState(Enum):
@@ -39,19 +40,45 @@ class Board:
     move.
     """
 
-    def __init__(self, board=None, enable_ai=False):
+    def __init__(self):
         """ Creates a new instance of the Board class, optionally
         accepting a current board state. """
         board_logger.info('Game start')
-        self.board = board if board is not None else [
+        self.board = [
             [None]*3 for i in range(3)
         ]
-        self.current_player = Player.PLAYER_X
         self.winning_span = []
-        self.state = BoardState.PLAYING
-        self.enable_ai = enable_ai
+        self.counter = 0
 
-    def check_state(self) -> BoardState:
+    def get_winner(self):
+        """ Find winner on board."""
+        spans = {}
+
+        # check each row and column
+        for i in range(3):
+            row = self.board[i]
+            spans[f'row {i}'] = row
+            col = self.board[0][i], self.board[1][i], self.board[2][i]
+            spans[f'col {i}'] = col
+
+        # check diagonal front and back
+        diag_f = self.board[0][0], self.board[1][1], self.board[2][2]
+        diag_b = self.board[0][2], self.board[1][1], self.board[2][0]
+        spans['diag f'] = diag_f
+        spans['diag b'] = diag_b
+        board_logger.debug('Checking diagonal (\\): %s', diag_f)
+        board_logger.debug('Checking diagonal (/): %s', diag_b)
+
+        for span_name, span in spans.items():
+            span_count = Counter(span)
+            board_logger.debug('Checking span: %s - %s', span_name, span)
+            if (span_count[Player.PLAYER_O] == 3 or
+               span_count[Player.PLAYER_X] == 3):
+                winner = Player.PLAYER_O if span_count[Player.PLAYER_O] > 0 else Player.PLAYER_X
+                board_logger.info('Winner: %s', winner)
+                return winner
+
+    def get_state(self) -> BoardState:
         """ Check board for a win condition or errors.
 
         Checks the board for win conditions in rows, columns and diagonal.
@@ -110,50 +137,42 @@ class Board:
             return BoardState.FINISHED
         if win_count > 1:
             board_logger.error('Invalid board state (multiple wins)')
+            board_logger.debug(str(self))
             raise MultipleWinError()
 
         return BoardState.PLAYING
 
     def select_cell(self, row, column):
-        """ Plays a square (of `self.current_player`) in the specified `row`/`column`.
+        """ Plays a square (of `self.get_current_player()`) in the specified
+        `row`/`column`.
 
         Attempts to play a square for the specified `row`/`column`. If the
-        square is playable, assigns the value of `self.current_player` to that
-        square.
-        Then, `self.check_win()` is called to set the new `BoardState` value
-        and toggle the player (if the game is still in progress).
-
-        :returns:
-            A BoardState with the current state of the board.
+        square is playable, assigns the value of `self.get_current_player()`
+        to that square.
 
         """
         current_val = self.board[row][column]
         if current_val is not None:
-            raise InvalidMoveError('Attempted to select a non-empty cell')
-        self.board[row][column] = self.current_player
-        self.state = self.check_state()
-        if self.state == BoardState.PLAYING:
-            # only toggle current_player if the self.state is still PLAYING
-            self.current_player = Player.get_foe(self.current_player)
-            if self.current_player == Player.PLAYER_O and self.enable_ai:
-                grid = self.board_to_grid()
-                board_logger.info(grid)
-                move = ai.get_best_move(grid)
-                board_logger.info('AI selected best move %s', move)
-                self.select_cell(move[0], move[1])
-            board_logger.debug('Setting player: %s', self.current_player.value)
+            error_text = f'Attempted to select a non-empty cell {row}x{column}'
+            board_logger.error(error_text)
+            board_logger.debug(str(self))
+            raise InvalidMoveError(error_text)
+        self.board[row][column] = self.get_current_player()
 
-    def board_to_grid(self):
-        """ Returns a copy of the board as a primitive list of lists
-        with string values for the moves, or None for empty squares.
-        """
-        ret = []
-        for row_num in range(3):
-            row_vals = []
-            for cell in self.board[row_num]:
-                val = None if cell is None else cell.value
-                row_vals.append(val)
-            ret.append(row_vals)
+    def get_current_player(self):
+        """ Returns the Player whose turn it currently is. """
+        board_logger.debug('Get current player')
+        ret = Player.PLAYER_X
+        square_counter = Counter()
+        [square_counter.update(row) for row in self.board]
+        board_logger.debug('Square counter:')
+        board_logger.debug(square_counter)
+        x_count = square_counter[Player.PLAYER_X]
+        o_count = square_counter[Player.PLAYER_O]
+        if x_count > o_count:
+            ret = Player.PLAYER_O
+        board_logger.debug('Get current player: %s', ret.value)
+        board_logger.debug(str(self))
         return ret
 
     def get_available_squares(self) -> [(int, int)]:
@@ -164,10 +183,123 @@ class Board:
             for col_num in range(3):
                 if self.board[row_num][col_num] is None:
                     ret.append((row_num, col_num))
+        board_logger.debug('Get available squares:')
+        board_logger.debug(self.board)
+        board_logger.debug(ret)
         return ret
 
+    def make_best_move(self):
+        ai_logger.debug('Make best move')
+        ai_logger.debug(str(self))
+        state = self.get_state()
+        if state is not BoardState.PLAYING:
+            ai_logger.warning('Attempt to make best move in non playing state')
+            return
+
+        player = self.get_current_player()
+        opponent = Player.get_foe(player)
+
+        # win (row)
+        for row_num in range(3):
+            row = self.board[row_num]
+            counter = Counter(row)
+            ai_logger.debug('Row counter %s: %s', row_num, counter)
+            if counter[player] == 2 and counter[opponent] == 0:
+                ai_logger.debug('Found a row to win.')
+                for col_num in range(3):
+                    cell_val = self.board[row_num][col_num]
+                    if cell_val is None:
+                        self.board[row_num][col_num] = player
+                        return
+
+        # win (column)
+        for col_num in range(3):
+            col = self.board[0][col_num], self.board[1][col_num], self.board[2][col_num]
+            counter = Counter(col)
+            ai_logger.debug('Column counter %s: %s', col_num, counter)
+            if counter[player] == 2 and counter[opponent] == 0:
+                ai_logger.debug('Found a column to win.')
+                for row_num in range(3):
+                    cell_val = self.board[row_num][col_num]
+                    if cell_val is None:
+                        self.board[row_num][col_num] = player
+                        return
+
+        # block (row)
+        for row_num in range(3):
+            row = self.board[row_num]
+            counter = Counter(row)
+            ai_logger.debug('Row counter %s: %s', row_num, counter)
+            if counter[opponent] == 2 and counter[player] == 0:
+                ai_logger.debug('Found a row to block.')
+                for col_num in range(3):
+                    cell_val = self.board[row_num][col_num]
+                    if cell_val is None:
+                        self.board[row_num][col_num] = player
+                        return
+
+        # block (column)
+        for col_num in range(3):
+            col = self.board[0][col_num], self.board[1][col_num], self.board[2][col_num]
+            counter = Counter(col)
+            ai_logger.debug('Column counter %s: %s', col_num, counter)
+            if counter[opponent] == 2 and counter[player] == 0:
+                ai_logger.debug('Found a column to block a win.')
+                for row_num in range(3):
+                    cell_val = self.board[row_num][col_num]
+                    if cell_val is None:
+                        self.board[row_num][col_num] = player
+                        return
+
+        # win or block (diagonal)
+        diag_f = self.board[0][0], self.board[1][1], self.board[2][2]
+        diag_b = self.board[0][2], self.board[1][1], self.board[2][0]
+        counter = Counter(diag_f)
+        if ((counter[player] == 2 and counter[opponent] == 0) or
+           (counter[opponent] == 2 and counter[player] == 0)):
+            ai_logger.debug('Found a potential diagonal win or block.')
+            for cell in ((0,0), (1,1), (2,2)):
+                if self.board[cell[0]][cell[1]] is None:
+                    ai_logger.debug('blocking on diagonal f')
+                    self.board[cell[0]][cell[1]] = player
+                    return
+        counter = Counter(diag_b)
+        if ((counter[player] == 2 and counter[opponent] == 0) or
+           (counter[opponent] == 2 and counter[player] == 0)):
+            ai_logger.debug('Found a potential diagonal win or block.')
+            for cell in ((0,2), (1,1), (2,0)):
+                if self.board[cell[0]][cell[1]] is None:
+                    ai_logger.debug('blocking on diagonal b')
+                    self.board[cell[0]][cell[1]] = player
+                    return
+
+        # if an edge is available, take it
+        edge_cells = ((1, 0), (0, 1), (2, 1), (1, 2))
+        for cell in edge_cells:
+            if self.board[cell[0]][cell[1]] is None:
+                ai_logger.debug('Taking an edge cell.')
+                self.board[cell[0]][cell[1]] = player
+                return
+        # if the center is available, take it
+        if self.board[1][1] is None:
+            ai_logger.debug('Taking the center cell.')
+            self.board[1][1] = player
+            return
+
+        # if a corner is available, take it
+        corner_cells = ((0, 0), (0, 2), (2, 0), (2, 2))
+        for cell in corner_cells:
+            if self.board[cell[0]][cell[1]] is None:
+                ai_logger.debug('Taking a corner cell.')
+                self.board[cell[0]][cell[1]] = player
+                return
+
+
+
+        raise InvalidMoveError('No moves available')
+
     def __repr__(self):
-        ret = ''
+        ret = 'Board State:\n'
         for row in self.board:
             for cell in row:
                 if not cell:
@@ -175,6 +307,7 @@ class Board:
                 else:
                     ret += cell.value
             ret += '\n'
+        ret += '\n\n'
         return ret
 
 

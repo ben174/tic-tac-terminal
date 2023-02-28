@@ -2,6 +2,7 @@
 
 import pytest
 
+from loggers import board_logger
 from board import Board, BoardState, Player
 from board import MultipleWinError, InvalidMoveError
 
@@ -12,7 +13,7 @@ def test_single_cell_no_win():
     """
     board = Board()
     board.select_cell(0, 1)
-    assert board.state == BoardState.PLAYING
+    assert board.get_state() == BoardState.PLAYING
 
 
 def test_win():
@@ -40,58 +41,43 @@ def test_win():
     #    O O -
     #    - - -
     board.select_cell(1, 1)
-    assert board.state == BoardState.PLAYING
+    assert board.get_state() == BoardState.PLAYING
 
     # X: X X X -- Finish Him!
     #    O O -
     #    - - -
     board.select_cell(0, 2)
-    assert board.state == BoardState.FINISHED
+    assert board.get_state() == BoardState.FINISHED
 
 
 def test_ai():
     """ Plays a standard game, against AI
     TODO: this should be an entire module
     """
-    board = Board(enable_ai=False)
+    board = Board()
 
-    # X: X - -
-    #    - - -
-    #    - - -
-    board.select_cell(0, 0)
-
-    # O: X - -
-    #    O - -
-    #    - - -
-    board.select_cell(1, 0)
-
-    # X: X X -
-    #    O - -
-    #    - - -
-    board.select_cell(0, 1)
-
-    # O: X X -
-    #    O O -
-    #    - - -
-    board.select_cell(1, 1)
-    assert board.state == BoardState.PLAYING
-
-    # X: X X X -- Finish Him!
-    #    O O -
-    #    - - -
-    board.select_cell(0, 2)
-    assert board.state == BoardState.FINISHED
+    while True:
+        try:
+            board.make_best_move()
+        except:
+            board_logger.error(str(board))
+            raise
+        board_logger.info(str(board))
+        if board.get_state() is not BoardState.PLAYING:
+            break
+    assert board.get_state() == BoardState.CATS_GAME
+    board_logger.info(str(board))
 
 
 def test_player_toggle():
     """ Ensures the current player is toggled after each move.
     """
     board = Board()
-    assert board.current_player == Player.PLAYER_X
+    assert board.get_current_player() == Player.PLAYER_X
     board.select_cell(0, 0)
-    assert board.current_player == Player.PLAYER_O
+    assert board.get_current_player() == Player.PLAYER_O
     board.select_cell(0, 1)
-    assert board.current_player == Player.PLAYER_X
+    assert board.get_current_player() == Player.PLAYER_X
 
 
 def test_mixed_row():
@@ -107,7 +93,7 @@ def test_mixed_row():
 
     # X: X O X
     board.select_cell(0, 2)
-    assert board.state == BoardState.PLAYING
+    assert board.get_state() == BoardState.PLAYING
 
 
 def test_row_win():
@@ -117,7 +103,7 @@ def test_row_win():
     for i in range(3):
         board = Board()
         board.board[i] = [Player.PLAYER_X] * 3
-        assert board.check_state() == BoardState.FINISHED
+        assert board.get_state() == BoardState.FINISHED
 
 
 def test_col_win():
@@ -128,7 +114,7 @@ def test_col_win():
         board = Board()
         board.board[0][i], board.board[1][i], board.board[2][i] = (
             [Player.PLAYER_O] * 3)
-        assert board.check_state() == BoardState.FINISHED
+        assert board.get_state() == BoardState.FINISHED
 
 
 def test_diagonal_win():
@@ -139,13 +125,13 @@ def test_diagonal_win():
     board = Board()
     for i in range(3):
         board.board[i][i] = Player.PLAYER_O
-    assert board.check_state() == BoardState.FINISHED
+    assert board.get_state() == BoardState.FINISHED
 
     # Diagonal: /
     board = Board()
     board.board[2][0], board.board[1][1], board.board[0][2] = (
         [Player.PLAYER_O] * 3)
-    assert board.check_state() == BoardState.FINISHED
+    assert board.get_state() == BoardState.FINISHED
 
 
 def test_cats_game():
@@ -161,7 +147,7 @@ def test_cats_game():
     board.board[0] = Player.PLAYER_O, Player.PLAYER_X, Player.PLAYER_O
     board.board[1] = Player.PLAYER_X, Player.PLAYER_O, None
     board.board[2] = Player.PLAYER_X, Player.PLAYER_O, Player.PLAYER_X
-    assert board.check_state() == BoardState.CATS_GAME
+    assert board.get_state() == BoardState.CATS_GAME
 
 
 def test_multiple_win_error():
@@ -172,7 +158,7 @@ def test_multiple_win_error():
         board = Board()
         board.board[0] = [Player.PLAYER_X] * 3
         board.board[1] = [Player.PLAYER_O] * 3
-        board.check_state()
+        board.get_state()
 
 
 def test_invalid_move_error():
