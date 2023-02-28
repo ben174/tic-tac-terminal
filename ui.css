@@ -33,13 +33,13 @@ BoardScreen {
 Button {
   width: 100%;
   height: 100%;
+  margin: 1;
 }
 
 #header-label {
   width: 100%;
   content-align: center middle;
   padding: 0 1;
-  height: 100%;
   background: $primary-lighten-2;
   color: $text;
 }

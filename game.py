@@ -10,20 +10,10 @@ class GameOutcome(Enum):
     CATS_GAME = 'Cat\'s Game'
 
 
-class GameDifficulty(Enum):
-    EASY = 'Easy'
-    MEDIUM = 'Medium'
-    IMPOSSIBLE = 'Impossible'
-
-    def __repr__(self):
-        return self.value
-
-
 class Game:
     def __init__(self, ai=True):
         game_logger.debug('Initializing new game')
         self.board = Board()
-        self.difficulty = GameDifficulty.IMPOSSIBLE
         self.ai = ai
         self.outcomes = {
             GameOutcome.WIN: 0,
@@ -31,7 +21,7 @@ class Game:
             GameOutcome.CATS_GAME: 0,
         }
 
-    def new_game(self, ai=True, difficulty=GameDifficulty.IMPOSSIBLE):
+    def new_game(self, ai=True):
         self.board = Board()
 
     def get_state(self):
